@@ -117,9 +117,9 @@ try {
       // currentBuild.setDescription("Pinry Unit Test")
     }
   }
-// } catch(e) {
-//   node() {
-//     echo "${e}"
+} catch(e) {
+  // node() {
+    echo "${e}"
 //     if(currentBuild.result || currentBuild.result != 'FAILURE') {
 //       currentBuild.result = 'FAILURE'
 //     }
@@ -130,7 +130,7 @@ try {
 //       Error: ${e.message}
 //     """
 //     emailext body: body, recipientProviders: [[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']], subject: "[PCF SonarQube] build ${env.BUILD_NUMBER} - ${currentBuild.result}"
-//   }
+  // }
 }
 
 def getVersion() {
