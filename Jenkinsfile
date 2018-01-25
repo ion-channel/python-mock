@@ -6,33 +6,38 @@ def defaults = [
   threadfix_key_cred: 'threadfix-sonar-key',
   threadfix_url: '',
   threadfix_id: '7',
-  nexus_cred: 'nexus-user-pass',
   oauth_client_cred: 'sonar-oauth-client',
-  pcf_service_owner: 'devops@nga',
-  syslog_drain: 'gs_syslog',
-  exec_label: 'Linux&&!gpu&&!restricted-master',
-  containerPath: '/apps',
   aws_ca: '',
-  aws_region: 'us-east-1',
-  s3_read_credentials: 'ion_s3_poc_bucket',
-  containerPath: '/app',
-  dep_check: 'yes',
-  aws_region: 'us-east-1',
-  deploy_repo: 'https://nexus.gs.mil/content/repositories/fade_devops-release',
-  source_url_orig: 'https://s3.amazonaws.com/repo.geointservices.io/artifacts/stage/misc/pinry.zip',
-  source_url: 's3://ion-dirty.geointservices.io/pinry.zip',
-  dest_url: 's3://ion-clean.geointservices.io/',
-  pypi_url: ''
+  dep_check: 'yes'
 ]
 
 try {
-  node(defaults.exec_label) {
+  node(props.exec_label) {
+    stage('Fetch code') {
+      checkout scm
+      sh 'git clean -ffdx'
+      VERSION = getVersion()
+      stash name: 'code', useDefaultExcludes: false
+
+      if( env.JENKINS_URL =~ 'ic.gov' ) {
+        echo 'Reading TC properties file'
+        props = readProperties defaults: defaults, file: 'tc.properties'
+      } else if ( env.JENKINS_URL =~ 'gs.mil' ){
+        echo 'Reading UC properties file'
+        props = readProperties defaults: defaults, file: 'uc.properties'
+      } else {
+        echo 'Reading default properties file'
+        props = readProperties defaults: defaults, file: 'io.properties'
+      }
+    }
+
+
     stage('Download Pinry') {
-      def file = sh(script: "basename ${defaults.source_url}", returnStdout: true).trim()
-      withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: defaults.s3_read_credentials, secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+      def file = sh(script: "basename ${props.source_url}", returnStdout: true).trim()
+      withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: props.s3_read_credentials, secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
         sh """
           docker pull solidyn/cli
-          docker run --rm -v /tmp:${defaults.containerPath}:Z -w ${defaults.containerPath} -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} solidyn/cli aws s3 cp ${defaults.source_url} .
+          docker run --rm -v /tmp:${props.containerPath}:Z -w ${props.containerPath} -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} solidyn/cli aws s3 cp ${props.source_url} .
         """
         sh "mv /tmp/${file} . || true"
       }
@@ -40,7 +45,7 @@ try {
 
 
       // withEnv(["HOME=${pwd()}"]) {
-      //   sh "wget ${defaults.source_url}"
+      //   sh "wget ${props.source_url}"
       //   def file = 'pinry.zip'
       //   unzip zipFile: file
       // }
@@ -48,21 +53,28 @@ try {
 
     stage('Build Pinry') {
       dir('pinry') {
-        sh 'virtualenv .pinry'
-        sh '. .pinry/bin/activate'
-        // stash includes: 'sonarqube/', name: 'build'
-        sh 'pip install -r requirements.txt'
+        if (fileExists('requirements.txt')) {
+          sh """
+          virtualenv .pinry
+          . .pinry/bin/activate
+          pip install -r requirements.txt
+          """
+        }
       }
     }
 
     stage('Unit Test Pinry') {
       dir('pinry') {
-        sh 'python manage.py test > ./report.log'
+        sh """
+        virtualenv .pinry
+        . .pinry/bin/activate
+        python manage.py test > ./report.log
+        """
       }
     }
 
     stage('Artifact Push to Nexus') {
-      node(defaults.exec_label) {
+      node(props.exec_label) {
         deleteDir()
         dir('build') {
           unstash 'code'
@@ -122,21 +134,21 @@ def publishZip(file, artifactId, fVer) {
       sh '[[ -f ~/.m2/settings.xml ]] && cp ~/.m2/settings.xml .'
     }
     withEnv(["PATH+MVN=${mvn}/bin", "HOME=${pwd()}", "_JAVA_OPTIONS=-Duser.home=${pwd()}"]) {
-      sh "mvn -U --batch-mode deploy:deploy-file -DgroupId=sonar -DartifactId=${artifactId} -Dversion=${fVer} -Dpackaging=zip -Dfile=${file} -DrepositoryId=nexus -Durl=${defaults.deploy_repo}"
+      sh "mvn -U --batch-mode deploy:deploy-file -DgroupId=sonar -DartifactId=${artifactId} -Dversion=${fVer} -Dpackaging=zip -Dfile=${file} -DrepositoryId=nexus -Durl=${props.deploy_repo}"
     }
   }
 }
 
 def uploadToThreadfix(file) {
   fileExists file
-  if( defaults.threadfix_url == '' ) {
+  if( props.threadfix_url == '' ) {
     return true
   }
-  if(defaults.threadfix_id == null) {
+  if(props.threadfix_id == null) {
     throw new Exception("threadfix_id not set. Cannot upload ${file} to threadfix server")
   }
-  withCredentials([string(credentialsId: defaults.threadfix_key_cred, variable: 'THREADFIX_KEY')]) {
-    sh "/bin/curl -v --insecure -H 'Accept: application/json' -X POST --form file=@${file} ${defaults.threadfix_url}/rest/applications/${defaults.threadfix_id}/upload?apiKey=${THREADFIX_KEY}"
+  withCredentials([string(credentialsId: props.threadfix_key_cred, variable: 'THREADFIX_KEY')]) {
+    sh "/bin/curl -v --insecure -H 'Accept: application/json' -X POST --form file=@${file} ${props.threadfix_url}/rest/applications/${props.threadfix_id}/upload?apiKey=${THREADFIX_KEY}"
   }
 }
 
