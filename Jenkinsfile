@@ -72,7 +72,8 @@ try {
           sh """
           virtualenv .pinry
           . .pinry/bin/activate
-          pip install -r requirements.txt
+          pip install -r requirements.txt > report.txt
+          cat report.txt
           """
         }
       }
@@ -99,6 +100,10 @@ try {
     stage('Artifact S3 Clean') {
       // deleteDir()
       sh 'ls -lart'
+      echo "Show .ionize-artifact.yaml"
+      sh 'cat .ionize-artifact.yaml'
+      echo "Show .ionize.yaml"
+      sh 'cat .ionize.yaml'
       withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: props.s3_read_credentials, secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
         sh """
           docker pull solidyn/cli
