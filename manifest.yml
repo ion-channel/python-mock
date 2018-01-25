@@ -1,0 +1,8 @@
+---
+applications:
+  - name: pinry
+    memory: 1G
+    disk_quota: 512M
+    path: .
+    command: 'python manage.py migrate; python manage.py runserver 0.0.0.0:$PORT'
+
