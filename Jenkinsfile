@@ -98,6 +98,7 @@ try {
 
     stage('Artifact S3 Clean') {
       // deleteDir()
+      sh 'ls -l'
       // withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: props.s3_read_credentials, secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
       //   sh """
       //     docker pull solidyn/cli
