@@ -67,7 +67,6 @@ try {
     stage('Unit Test Pinry') {
       dir('pinry') {
         sh """
-        virtualenv .pinry
         . .pinry/bin/activate
         python manage.py test > ./report.log
         """
