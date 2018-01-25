@@ -59,7 +59,7 @@ try {
       """
     }
 
-    stage('Download Ionize')
+    stage('Download Ionize') {
       sh """
       wget https://s3.amazonaws.com/public.ionchannel.io/files/ion-connect/linux/bin/ion-connect
       chmod +x ion-connect
@@ -91,22 +91,30 @@ try {
       withCredentials([string(credentialsId: props.ionchannel_secret_key, variable: 'IONIZE_TOKEN')]) {
         sh """
         export IONCHANNEL_SECRET_KEY=${IONIZE_TOKEN}
-        ./ionize analyze 
+        ./ionize analyze
         """
       }
     }
 
-    stage('Artifact Push to Nexus') {
-      deleteDir()
-      dir('build') {
-        unstash 'code'
-        unstash 'build'
+    stage('Artifact S3 Clean') {
+      // deleteDir()
+      withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: props.s3_read_credentials, secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+        sh """
+          docker pull solidyn/cli
+          docker run --rm -v /tmp:${props.containerPath}:Z -w ${props.containerPath} -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} solidyn/cli aws s3 cp pinry.zip ${props.dest_url} .
+        """
+        sh "mv /tmp/${file} . || true"
       }
-      zip dir: 'build', glob: '', zipFile: "sonar-${VERSION}-${env.BUILD_NUMBER}.zip"
-      sh "cp pinry.zip pinry-${VERSION}-${env.BUILD_NUMBER}.zip"
-      // publishZip("sonar-${VERSION}-${env.BUILD_NUMBER}.zip", 'test', "${VERSION}-${env.BUILD_NUMBER}")
-      publishZip("pinry-${VERSION}-${env.BUILD_NUMBER}.zip", 'stage', "${VERSION}-${env.BUILD_NUMBER}")
-      currentBuild.setDescription("Pinry Unit Test")
+
+      // dir('build') {
+      //   unstash 'code'
+      //   unstash 'build'
+      // }
+      // zip dir: 'build', glob: '', zipFile: "sonar-${VERSION}-${env.BUILD_NUMBER}.zip"
+      // sh "cp pinry.zip pinry-${VERSION}-${env.BUILD_NUMBER}.zip"
+      // // publishZip("sonar-${VERSION}-${env.BUILD_NUMBER}.zip", 'test', "${VERSION}-${env.BUILD_NUMBER}")
+      // publishZip("pinry-${VERSION}-${env.BUILD_NUMBER}.zip", 'stage', "${VERSION}-${env.BUILD_NUMBER}")
+      // currentBuild.setDescription("Pinry Unit Test")
     }
   }
 } catch(e) {
