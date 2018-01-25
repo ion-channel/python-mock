@@ -52,6 +52,20 @@ try {
       // }
     }
 
+    stage('Download ion-connect') {
+      sh """
+      wget --quiet https://s3.amazonaws.com/public.ionchannel.io/files/ionize/linux/bin/ionize
+      chmod +x ionize
+      """
+    }
+
+    stage('Download Ionize')
+      sh """
+      wget https://s3.amazonaws.com/public.ionchannel.io/files/ion-connect/linux/bin/ion-connect
+      chmod +x ion-connect
+      """
+    }
+
     stage('Build Pinry') {
       dir('pinry') {
         if (fileExists('requirements.txt')) {
@@ -68,7 +82,16 @@ try {
       dir('pinry') {
         sh """
         . .pinry/bin/activate
-        python manage.py test > ./report.log
+        echo Would run python manage.py test
+        """
+      }
+    }
+
+    stage('Ionize') {
+      withCredentials([string(credentialsId: props.ionchannel_secret_key, variable: 'IONIZE_TOKEN')]) {
+        sh """
+        export IONCHANNEL_SECRET_KEY=${IONIZE_TOKEN}
+        ./ionize analyze 
         """
       }
     }
