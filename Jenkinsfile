@@ -8,29 +8,41 @@ def defaults = [
   threadfix_id: '7',
   nexus_cred: 'nexus-user-pass',
   oauth_client_cred: 'sonar-oauth-client',
-  dev_pcf_cred: 'dev-pcf-user-pass',
-  ops_pcf_cred: 'ops-pcf-user-pass',
   pcf_service_owner: 'devops@nga',
   syslog_drain: 'gs_syslog',
   exec_label: 'Linux&&!gpu&&!restricted-master',
   aws_ca: '',
   aws_region: 'us-east-1',
+  s3_read_credentials: 'ion_s3_poc_bucket',
   containerPath: '/app',
   dep_check: 'yes',
   aws_region: 'us-east-1',
   deploy_repo: 'https://nexus.gs.mil/content/repositories/fade_devops-release',
-  source_url: 'https://s3.amazonaws.com/repo.geointservices.io/artifacts/stage/misc/pinry.zip',
+  source_url_orig: 'https://s3.amazonaws.com/repo.geointservices.io/artifacts/stage/misc/pinry.zip',
+  source_url: 's3://ion-dirty.geointservices.io/pinry.zip',
+  dest_url: 's3://ion-clean.geointservices.io/',
   pypi_url: ''
 ]
 
 try {
   node(defaults.exec_label) {
     stage('Download Pinry') {
-      withEnv(["HOME=${pwd()}"]) {
-        sh "wget ${defaults.source_url}"
-        def file = 'pinry.zip'
-        unzip zipFile: file
+      def file = sh(script: "basename ${props.source_url}", returnStdout: true).trim()
+      withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: defaults.s3_read_credentials, secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+        sh """
+          docker pull solidyn/cli
+          docker run --rm -v /tmp:${props.containerPath}:Z -w ${props.containerPath} -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} solidyn/cli aws s3 cp ${defaults.source_url} .
+        """
+        sh "mv /tmp/${file} . || true"
       }
+      unzip zipFile: file
+
+
+      // withEnv(["HOME=${pwd()}"]) {
+      //   sh "wget ${defaults.source_url}"
+      //   def file = 'pinry.zip'
+      //   unzip zipFile: file
+      // }
     }
 
     stage('Build Pinry') {
