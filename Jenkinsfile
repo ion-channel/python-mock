@@ -11,6 +11,7 @@ def defaults = [
   pcf_service_owner: 'devops@nga',
   syslog_drain: 'gs_syslog',
   exec_label: 'Linux&&!gpu&&!restricted-master',
+  containerPath: '/apps',
   aws_ca: '',
   aws_region: 'us-east-1',
   s3_read_credentials: 'ion_s3_poc_bucket',
@@ -27,11 +28,11 @@ def defaults = [
 try {
   node(defaults.exec_label) {
     stage('Download Pinry') {
-      def file = sh(script: "basename ${props.source_url}", returnStdout: true).trim()
+      def file = sh(script: "basename ${defaults.source_url}", returnStdout: true).trim()
       withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: defaults.s3_read_credentials, secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
         sh """
           docker pull solidyn/cli
-          docker run --rm -v /tmp:${props.containerPath}:Z -w ${props.containerPath} -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} solidyn/cli aws s3 cp ${defaults.source_url} .
+          docker run --rm -v /tmp:${defaults.containerPath}:Z -w ${defaults.containerPath} -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} solidyn/cli aws s3 cp ${defaults.source_url} .
         """
         sh "mv /tmp/${file} . || true"
       }
