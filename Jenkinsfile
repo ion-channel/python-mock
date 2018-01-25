@@ -7,12 +7,13 @@ def defaults = [
   threadfix_url: '',
   threadfix_id: '7',
   oauth_client_cred: 'sonar-oauth-client',
+  exec_label: 'Linux&&!gpu&&!restricted-master',
   aws_ca: '',
   dep_check: 'yes'
 ]
 
 try {
-  node(props.exec_label) {
+  node(defaults.exec_label) {
     stage('Fetch code') {
       checkout scm
       sh 'git clean -ffdx'
@@ -74,18 +75,16 @@ try {
     }
 
     stage('Artifact Push to Nexus') {
-      node(props.exec_label) {
-        deleteDir()
-        dir('build') {
-          unstash 'code'
-          unstash 'build'
-        }
-        zip dir: 'build', glob: '', zipFile: "sonar-${VERSION}-${env.BUILD_NUMBER}.zip"
-        sh "cp pinry.zip pinry-${VERSION}-${env.BUILD_NUMBER}.zip"
-        // publishZip("sonar-${VERSION}-${env.BUILD_NUMBER}.zip", 'test', "${VERSION}-${env.BUILD_NUMBER}")
-        publishZip("pinry-${VERSION}-${env.BUILD_NUMBER}.zip", 'stage', "${VERSION}-${env.BUILD_NUMBER}")
-        currentBuild.setDescription("Pinry Unit Test")
+      deleteDir()
+      dir('build') {
+        unstash 'code'
+        unstash 'build'
       }
+      zip dir: 'build', glob: '', zipFile: "sonar-${VERSION}-${env.BUILD_NUMBER}.zip"
+      sh "cp pinry.zip pinry-${VERSION}-${env.BUILD_NUMBER}.zip"
+      // publishZip("sonar-${VERSION}-${env.BUILD_NUMBER}.zip", 'test', "${VERSION}-${env.BUILD_NUMBER}")
+      publishZip("pinry-${VERSION}-${env.BUILD_NUMBER}.zip", 'stage', "${VERSION}-${env.BUILD_NUMBER}")
+      currentBuild.setDescription("Pinry Unit Test")
     }
   }
 } catch(e) {
