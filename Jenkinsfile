@@ -35,7 +35,6 @@ try {
 
 
     stage('Download Pinry') {
-      // def aws = '.local/bin/aws'
       withEnv(["HOME=${pwd()}"]) {
         withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: props.s3_read_credentials, secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
           sh "pip install awscli --upgrade --user || true"
@@ -101,16 +100,11 @@ try {
       echo "Show .ionize.yaml"
       sh 'cat .ionize.yaml'
 
-      // def aws = '.local/bin/aws'
       withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: props.s3_read_credentials, secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
         withEnv(["HOME=${pwd()}"]) {
-          // if( props.pypi_url != null && props.pypi_url != '' ) {
-          //   createPipConf(props.pypu_url)
-          // }
-          sh "pip install awscli --upgrade --user || true"
           sh """
           aws s3 cp ${defaults.file} ${props.dest_url}
-          aws s3 cp .ionize.yaml ${props.dest_url}/${defaults.file}_ionize.yaml
+          aws s3 cp .ionize.yaml ${props.dest_url}${defaults.file}_ionize.yaml
           """
         }
       }
