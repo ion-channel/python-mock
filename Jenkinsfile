@@ -9,6 +9,7 @@ def defaults = [
   oauth_client_cred: 'sonar-oauth-client',
   exec_label: 'Linux&&!gpu&&!restricted-master',
   aws_ca: '',
+  file: 'pinry.zip',
   dep_check: 'yes'
 ]
 
@@ -34,15 +35,15 @@ try {
 
 
     stage('Download Pinry') {
-      def file = sh(script: "basename ${props.source_url}", returnStdout: true).trim()
+      //def file = sh(script: "basename ${props.source_url}", returnStdout: true).trim()
       withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: props.s3_read_credentials, secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
         sh """
           docker pull solidyn/cli
           docker run --rm -v /tmp:${props.containerPath}:Z -w ${props.containerPath} -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} solidyn/cli aws s3 cp ${props.source_url} .
         """
-        sh "mv /tmp/${file} . || true"
+        sh "mv /tmp/${defaults.file} . || true"
       }
-      unzip zipFile: file
+      unzip zipFile: defaults.file
 
 
       // withEnv(["HOME=${pwd()}"]) {
@@ -108,15 +109,17 @@ try {
       withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: props.s3_read_credentials, secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
         sh """
           docker pull solidyn/cli
-          docker run --rm -v /tmp:${props.containerPath}:Z -w ${props.containerPath} -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} solidyn/cli aws s3 cp pinry.zip ${props.dest_url}
+          docker run --rm -v /tmp:${props.containerPath}:Z -w ${props.containerPath} -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} solidyn/cli aws s3 cp ${defaults.file} ${props.dest_url}
+          docker run --rm -v /tmp:${props.containerPath}:Z -w ${props.containerPath} -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} solidyn/cli aws s3 cp .ionize.yaml ${props.dest_url}/${defaults.file}_ionize.yaml
         """
-        dir('pinry') {
-          echo "Notify SNS"
-          sh """
-          aws configure set region us-east-1
-          aws sns publish --topic-arn arn:aws:sns:us-east-1:846311194563:Ion-Channel-Mock --message file://.ionize.yaml
-          """
-        }
+        // SNS with teamId and projectId
+        // dir('pinry') {
+        //   echo "Notify SNS"
+        //   sh """
+        //   aws configure set region us-east-1
+        //   aws sns publish --topic-arn arn:aws:sns:us-east-1:846311194563:Ion-Channel-Mock --message file://.ionize.yaml
+        //   """
+        // }
       }
 
       // dir('build') {
