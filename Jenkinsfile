@@ -106,6 +106,7 @@ try {
           aws s3 cp ${defaults.file} ${props.dest_url}
           aws s3 cp .ionize.yaml ${props.dest_url}${defaults.file}_ionize.yaml
           """
+          // Instead of sidecar file, Ian's tools takes a curl command. The teamId and projectId data can be embedded in the curl.
         }
       }
     }
