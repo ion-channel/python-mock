@@ -41,11 +41,12 @@ try {
         if( props.pypi_url != null && props.pypi_url != '' ) {
           createPipConf(props.pypu_url)
         }
-        sh "pip install awscli --upgrade --user || true"
-        sh "${aws} configure set s3.signature_version s3v4 || true"
-        sh "${aws} configure set region ${props.aws_region} || true"
-
-        sh "${aws} s3 cp ${props.source_url} . || aws s3 cp ${props.source_url} ."
+        sh """
+        pip install awscli --upgrade --user || true
+        ${aws} configure set s3.signature_version s3v4 || true
+        ${aws} configure set region ${props.aws_region} || true
+        ${aws} s3 cp ${props.source_url} . 
+        """
       }
       unzip zipFile: defaults.file
     }
@@ -112,9 +113,9 @@ try {
         sh "pip install awscli --upgrade --user || true"
         sh """
         ${aws} configure set s3.signature_version s3v4 || true
-        sh ${aws} configure set region ${props.aws_region} || true
-        sh ${aws} s3 cp ${defaults.file} ${props.dest_url}
-        sh ${aws} s3 cp .ionize.yaml ${props.dest_url}/${defaults.file}_ionize.yaml
+        ${aws} configure set region ${props.aws_region} || true
+        ${aws} s3 cp ${defaults.file} ${props.dest_url}
+        ${aws} s3 cp .ionize.yaml ${props.dest_url}/${defaults.file}_ionize.yaml
         ${aws} configure set region us-east-1
         ${aws} sns publish --topic-arn arn:aws:sns:us-east-1:846311194563:Ion-Channel-Mock --message file://.ionize.yaml
         """
