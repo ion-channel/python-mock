@@ -110,13 +110,13 @@ try {
           docker pull solidyn/cli
           docker run --rm -v /tmp:${props.containerPath}:Z -w ${props.containerPath} -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} solidyn/cli aws s3 cp pinry.zip ${props.dest_url}
         """
-        echo "Notify SNS"
-        sh """
-        ls -ld ~/.aws
-        ls -l ~/.aws/
-        aws configure set region us-east-1
-        aws sns publish --topic-arn arn:aws:sns:us-east-1:846311194563:Ion-Channel-Mock --message file://.ionize.yaml
-        """
+        dir('pinry') {
+          echo "Notify SNS"
+          sh """
+          aws configure set region us-east-1
+          aws sns publish --topic-arn arn:aws:sns:us-east-1:846311194563:Ion-Channel-Mock --message file://.ionize.yaml
+          """
+        }
       }
 
       // dir('build') {
