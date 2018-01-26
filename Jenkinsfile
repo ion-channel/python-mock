@@ -37,9 +37,9 @@ try {
     stage('Download Pinry') {
       // def aws = '.local/bin/aws'
       withEnv(["HOME=${pwd()}"]) {
-        if( props.pypi_url != null && props.pypi_url != '' ) {
-          createPipConf(props.pypu_url)
-        }
+        // if( props.pypi_url != null && props.pypi_url != '' ) {
+        //   createPipConf(props.pypu_url)
+        // }
         sh "pip install awscli --upgrade --user || true"
         // sh "${aws} configure set s3.signature_version s3v4 || true"
         // sh "${aws} configure set region ${props.aws_region} || true"
@@ -107,9 +107,9 @@ try {
 
       // def aws = '.local/bin/aws'
       withEnv(["HOME=${pwd()}"]) {
-        if( props.pypi_url != null && props.pypi_url != '' ) {
-          createPipConf(props.pypu_url)
-        }
+        // if( props.pypi_url != null && props.pypi_url != '' ) {
+        //   createPipConf(props.pypu_url)
+        // }
         sh "pip install awscli --upgrade --user || true"
         sh """
         aws s3 cp ${defaults.file} ${props.dest_url}
