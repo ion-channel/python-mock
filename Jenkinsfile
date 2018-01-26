@@ -117,25 +117,26 @@ try {
         sh ${aws} s3 cp .ionize.yaml ${props.dest_url}/${defaults.file}_ionize.yaml
         ${aws} configure set region us-east-1
         ${aws} sns publish --topic-arn arn:aws:sns:us-east-1:846311194563:Ion-Channel-Mock --message file://.ionize.yaml
+        """
       }
     }
 
-  } 
+  }
 
-// } catch(e) {
-  // node(defaults.exec_label) {
-  //   echo "${e}"
-  //   if(currentBuild.result || currentBuild.result != 'FAILURE') {
-  //     currentBuild.result = 'FAILURE'
-  //   }
-  //   def body = """
-  //     The build for ${env.JOB_NAME} is in status ${currentBuild.result}.
-  //     See ${env.BUILD_URL}
-  //
-  //     Error: ${e.message}
-  //   """
-  //   emailext body: body, recipientProviders: [[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']], subject: "[PCF SonarQube] build ${env.BUILD_NUMBER} - ${currentBuild.result}"
-  // }
+} catch(e) {
+  node(defaults.exec_label) {
+    echo "${e}"
+    if(currentBuild.result || currentBuild.result != 'FAILURE') {
+      currentBuild.result = 'FAILURE'
+    }
+    def body = """
+      The build for ${env.JOB_NAME} is in status ${currentBuild.result}.
+      See ${env.BUILD_URL}
+
+      Error: ${e.message}
+    """
+    emailext body: body, recipientProviders: [[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']], subject: "[PCF SonarQube] build ${env.BUILD_NUMBER} - ${currentBuild.result}"
+  }
 }
 
 def getVersion() {
