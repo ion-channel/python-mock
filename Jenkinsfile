@@ -120,22 +120,22 @@ try {
       }
     }
 
-  } // node
+  } 
 
-} catch(e) {
-  node() {
-    echo "${e}"
-    if(currentBuild.result || currentBuild.result != 'FAILURE') {
-      currentBuild.result = 'FAILURE'
-    }
-    def body = """
-      The build for ${env.JOB_NAME} is in status ${currentBuild.result}.
-      See ${env.BUILD_URL}
-
-      Error: ${e.message}
-    """
-    emailext body: body, recipientProviders: [[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']], subject: "[PCF SonarQube] build ${env.BUILD_NUMBER} - ${currentBuild.result}"
-  }
+// } catch(e) {
+  // node(defaults.exec_label) {
+  //   echo "${e}"
+  //   if(currentBuild.result || currentBuild.result != 'FAILURE') {
+  //     currentBuild.result = 'FAILURE'
+  //   }
+  //   def body = """
+  //     The build for ${env.JOB_NAME} is in status ${currentBuild.result}.
+  //     See ${env.BUILD_URL}
+  //
+  //     Error: ${e.message}
+  //   """
+  //   emailext body: body, recipientProviders: [[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']], subject: "[PCF SonarQube] build ${env.BUILD_NUMBER} - ${currentBuild.result}"
+  // }
 }
 
 def getVersion() {
