@@ -36,21 +36,18 @@ try {
 
     stage('Download Pinry') {
       //def file = sh(script: "basename ${props.source_url}", returnStdout: true).trim()
-      withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: props.s3_read_credentials, secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-        sh """
-          docker pull solidyn/cli
-          docker run --rm -v /tmp:${props.containerPath}:Z -w ${props.containerPath} -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} solidyn/cli aws s3 cp ${props.source_url} .
-        """
-        sh "cp /tmp/${defaults.file} . || true"
+      def aws = '.local/bin/aws'
+      withEnv(["HOME=${pwd()}"]) {
+        if( props.pypi_url != null && props.pypi_url != '' ) {
+          createPipConf(props.pypu_url)
+        }
+        sh "pip install awscli --upgrade --user || true"
+        sh "${aws} configure set s3.signature_version s3v4 || true"
+        sh "${aws} configure set region ${props.aws_region} || true"
+
+        sh "${aws} s3 cp ${props.source_url} . || aws s3 cp ${props.source_url} ."
       }
       unzip zipFile: defaults.file
-
-
-      // withEnv(["HOME=${pwd()}"]) {
-      //   sh "wget ${props.source_url}"
-      //   def file = 'pinry.zip'
-      //   unzip zipFile: file
-      // }
     }
 
     stage('Download ion-connect') {
@@ -106,37 +103,27 @@ try {
 
       echo "Show .ionize.yaml"
       sh 'cat .ionize.yaml'
-      withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: props.s3_read_credentials, secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-        withEnv(["HOME=${pwd()}"]) {
-          sh """
-            docker pull solidyn/cli
-            docker run --rm -v ${HOME}:${props.containerPath}:Z -w ${props.containerPath} -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} solidyn/cli aws s3 cp ${defaults.file} ${props.dest_url}
-            docker run --rm -v ${HOME}:${props.containerPath}:Z -w ${props.containerPath} -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} solidyn/cli aws s3 cp .ionize.yaml ${props.dest_url}/${defaults.file}_ionize.yaml
-          """
-          // SNS with teamId and projectId
-          // dir('pinry') {
-          //   echo "Notify SNS"
-          //   sh """
-          //   aws configure set region us-east-1
-          //   aws sns publish --topic-arn arn:aws:sns:us-east-1:846311194563:Ion-Channel-Mock --message file://.ionize.yaml
-          //   """
-          // }
-        }
-      }
 
-      // dir('build') {
-      //   unstash 'code'
-      //   unstash 'build'
-      // }
-      // zip dir: 'build', glob: '', zipFile: "sonar-${VERSION}-${env.BUILD_NUMBER}.zip"
-      // sh "cp pinry.zip pinry-${VERSION}-${env.BUILD_NUMBER}.zip"
-      // // publishZip("sonar-${VERSION}-${env.BUILD_NUMBER}.zip", 'test', "${VERSION}-${env.BUILD_NUMBER}")
-      // publishZip("pinry-${VERSION}-${env.BUILD_NUMBER}.zip", 'stage', "${VERSION}-${env.BUILD_NUMBER}")
-      // currentBuild.setDescription("Pinry Unit Test")
+      def aws = '.local/bin/aws'
+      withEnv(["HOME=${pwd()}"]) {
+        if( props.pypi_url != null && props.pypi_url != '' ) {
+          createPipConf(props.pypu_url)
+        }
+        sh "pip install awscli --upgrade --user || true"
+        sh """
+        ${aws} configure set s3.signature_version s3v4 || true
+        sh ${aws} configure set region ${props.aws_region} || true
+        sh ${aws} s3 cp ${defaults.file} ${props.dest_url}
+        sh ${aws} s3 cp .ionize.yaml ${props.dest_url}/${defaults.file}_ionize.yaml
+        ${aws} configure set region us-east-1
+        ${aws} sns publish --topic-arn arn:aws:sns:us-east-1:846311194563:Ion-Channel-Mock --message file://.ionize.yaml
+      }
     }
-  }
+
+  } // node
+
 } catch(e) {
-  // node() {
+  node() {
     echo "${e}"
     if(currentBuild.result || currentBuild.result != 'FAILURE') {
       currentBuild.result = 'FAILURE'
@@ -148,7 +135,7 @@ try {
       Error: ${e.message}
     """
     emailext body: body, recipientProviders: [[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']], subject: "[PCF SonarQube] build ${env.BUILD_NUMBER} - ${currentBuild.result}"
-  // }
+  }
 }
 
 def getVersion() {
