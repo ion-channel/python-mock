@@ -112,6 +112,8 @@ try {
         """
         echo "Notify SNS"
         sh """
+        ls -ld ~/.aws
+        ls -l ~/.aws/
         aws configure set region us-east-1
         aws sns publish --topic-arn arn:aws:sns:us-east-1:846311194563:Ion-Channel-Mock --message file://.ionize.yaml
         """
