@@ -113,6 +113,8 @@ try {
           docker pull solidyn/cli
           docker run --rm -v /tmp:${props.containerPath}:Z -w ${props.containerPath} -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} solidyn/cli aws s3 cp ${defaults.file} ${props.dest_url}
           docker run --rm -v /tmp:${props.containerPath}:Z -w ${props.containerPath} -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} solidyn/cli aws s3 cp .ionize.yaml ${props.dest_url}/${defaults.file}_ionize.yaml
+          rm /tmp/${defaults.file}
+          rm /tmp/.ionize.yaml
         """
         // SNS with teamId and projectId
         // dir('pinry') {
