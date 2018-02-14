@@ -1,0 +1,49 @@
+---
+# .about.yml project metadata
+#
+# Copy this template into your project repository's root directory as
+# .about.yml and fill in the fields as described below.
+
+# This is a short name of your project that can be used as a URL slug.
+# (required)
+name: Python-Mock
+
+# This is the display name of your project. (required)
+full_name: Ion Channel Mock Python App
+
+# What is the problem your project solves? What is the solution? Use the
+# format shown below. The #dashboard team will gladly help you put this
+# together for your project. (required)
+description: This is a mock python app for Ion Channel Analysis
+
+type: app
+
+# What is the measurable impact of your project? Use the format shown below.
+# The #dashboard team will gladly help you put this together for your project.
+# (required)
+impact: high
+
+# What kind of team owns the repository? (required)
+# values: guild, working-group, project
+owner_type: project
+
+# What is your project's current status? (required)
+# values: discovery, alpha, beta, live
+stage: alpha
+
+# Should this repo have automated tests? If so, set to `true`. (required)
+# values: true, false
+testable: true
+
+licenses:
+  bunsen:
+    name: BSD
+    url: https://github.com/ion-channel/python-mock/blob/master/LICENSE.rst
+
+team:
+  - github: patrickpierson
+    role: lead
+
+contact:
+  - url: mailto:info@ionchannel.io
+    text: Ion Channel Info
